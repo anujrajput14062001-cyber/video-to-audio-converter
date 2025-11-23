@@ -2,200 +2,76 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Video / YouTube to MP3 Converter</title>
-
-  <!-- Google Adsense -->
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9616159709699470"
-    crossorigin="anonymous"></script>
-
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
   <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: radial-gradient(circle at center, #001f3f, #000814);
-      color: white;
-      text-align: center;
-      padding: 20px;
-    }
-
-    .container {
-      max-width: 600px;
-      margin: auto;
-      padding: 25px;
-      background: rgba(255, 255, 255, 0.06);
-      border-radius: 15px;
-      box-shadow: 0 0 40px rgba(0, 255, 255, 0.2);
-      backdrop-filter: blur(10px);
-      animation: fadeIn 0.8s ease-in-out;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(20px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    h2 {
-      margin-bottom: 10px;
-    }
-
-    .drop-zone {
-      padding: 35px;
-      border: 2px dashed cyan;
-      border-radius: 12px;
-      cursor: pointer;
-      margin-bottom: 20px;
-      transition: 0.3s;
-    }
-
-    .drop-zone:hover {
-      background: rgba(0, 255, 255, 0.15);
-    }
-
-    select, input {
-      width: 95%;
-      padding: 12px;
-      border-radius: 8px;
-      border: none;
-      margin-bottom: 15px;
-      font-size: 16px;
-    }
-
-    button {
-      width: 95%;
-      padding: 15px;
-      font-size: 18px;
-      background: cyan;
-      border: none;
-      border-radius: 10px;
-      cursor: pointer;
-      color: black;
-      font-weight: bold;
-      transition: 0.3s;
-    }
-
-    button:hover {
-      background: #00eaff;
-      transform: scale(1.03);
-    }
-
-    .progress {
-      width: 90%;
-      height: 10px;
-      margin: 10px auto;
-    }
-
-    .download-link {
-      color: #00ff00;
-      font-size: 18px;
-      display: block;
-      margin-top: 10px;
-    }
-
-    .section-title {
-      margin-top: 35px;
-      font-size: 22px;
-      font-weight: bold;
-      text-decoration: underline;
-    }
+    body { background:#0a1c3a; color:#fff; text-align:center; font-family:sans-serif; padding:30px; }
+    .box { background:#123; padding:20px; margin:auto; width:90%; max-width:500px; border-radius:12px; box-shadow:0 0 20px #00f3ff55; }
+    button { padding:14px 20px; border:none; background:#00eaff; font-size:18px; border-radius:8px; cursor:pointer; }
+    input,select{width:90%;padding:12px;margin:10px;border-radius:6px;border:none;}
+    a{color:#00ff9d;}
   </style>
 </head>
 
 <body>
 
-  <div class="container">
-    <h2>🎵 Video / YouTube to MP3 Converter</h2>
+  <h2>Video / YouTube to MP3 Converter 🎵</h2>
 
-    <!-- 🔹 YouTube Conversion Section -->
-    <div class="section-title">YouTube to MP3</div>
+  <div class="box">
 
-    <input type="text" id="ytUrl" placeholder="Paste YouTube URL here..." />
-
-    <button onclick="convertYouTube()">Convert YouTube → MP3</button>
-
-    <div id="ytResult"></div>
-
-
-    <!-- 🔹 Video Upload Section -->
-    <div class="section-title">Upload Video to Convert</div>
-
-    <div id="dropZone" class="drop-zone">Drag & Drop Videos Here<br>or Click to Select</div>
-    <input type="file" id="videoInput" accept="video/*" style="display: none">
-
-    <select id="formatSelect">
+    <h3>Upload Video</h3>
+    <input type="file" id="videoFile" />
+    <select id="format">
       <option value="mp3">MP3</option>
-      <option value="wav">WAV</option>
-      <option value="ogg">OGG</option>
     </select>
+    <button onclick="convertUpload()">Convert Upload → Audio</button>
+    <p id="uploadLink"></p>
 
-    <button onclick="convertAll()">Convert All</button>
+    <hr style="margin:20px">
 
-    <progress id="progressBar" class="progress" value="0" max="100"></progress>
-
-    <div id="downloadLinks"></div>
+    <h3>YouTube URL</h3>
+    <input id="ytURL" placeholder="Paste YouTube link" />
+    <button onclick="convertYT()">Convert YouTube → MP3</button>
+    <p id="ytLink"></p>
   </div>
 
-  <script>
-    const dropZone = document.getElementById("dropZone");
-    const videoInput = document.getElementById("videoInput");
+<script>
+async function convertUpload(){
+  let file = document.getElementById("videoFile").files[0];
+  if(!file) return alert("Select a video!");
 
-    dropZone.onclick = () => videoInput.click();
-    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.background = "rgba(0,255,255,0.2)"; };
-    dropZone.ondragleave = () => dropZone.style.background = "transparent";
+  let fd = new FormData();
+  fd.append("video", file);
+  fd.append("format", document.getElementById("format").value);
 
-    dropZone.ondrop = (e) => {
-      e.preventDefault();
-      dropZone.style.background = "transparent";
-      videoInput.files = e.dataTransfer.files;
-    };
+  let res = await fetch("/upload", { method:"POST", body:fd });
+  let data = await res.json();
+  if(data.download){
+    document.getElementById("uploadLink").innerHTML =
+      `<a href="${data.download}">Download Audio</a>`;
+  }
+}
 
-    // ================================
-    // 🎥 Video to MP3 Conversion
-    // ================================
-    function convertAll() {
-      const file = videoInput.files[0];
-      if (!file) return alert("Please select a video file first.");
+async function convertYT(){
+  let url = document.getElementById("ytURL").value;
+  if(!url) return alert("Paste YouTube URL!");
 
-      const fd = new FormData();
-      fd.append("video", file);
+  let res = await fetch("/youtube", {
+    method:"POST",
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({ url })
+  });
 
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/upload");
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable) {
-          document.getElementById("progressBar").value = (e.loaded / e.total) * 100;
-        }
-      };
-
-      xhr.onload = () => {
-        const data = JSON.parse(xhr.responseText);
-        document.getElementById("downloadLinks").innerHTML =
-          `<a class="download-link" href="${data.download}" target="_blank">Download MP3</a>`;
-      };
-
-      xhr.send(fd);
-    }
-
-    // ================================
-    // 🎵 YouTube Conversion
-    // ================================
-    async function convertYouTube() {
-      const url = document.getElementById("ytUrl").value;
-      if (!url) return alert("Enter a YouTube URL");
-
-      let res = await fetch("/youtube", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url })
-      });
-
-      let data = await res.json();
-      if (data.error) return alert("Conversion failed");
-
-      document.getElementById("ytResult").innerHTML =
-        `<a class="download-link" href="${data.download}" target="_blank">Download MP3</a>`;
-    }
-  </script>
+  let data = await res.json();
+  if(data.download){
+    document.getElementById("ytLink").innerHTML =
+      `<a href="${data.download}">Download MP3</a>`;
+  } else {
+    alert("YouTube conversion failed");
+  }
+}
+</script>
 
 </body>
 </html>
+

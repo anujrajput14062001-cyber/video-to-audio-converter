@@ -1,66 +1,87 @@
 import express from "express";
 import multer from "multer";
 import cors from "cors";
-import ytdl from "@distube/ytdl-core";
 import fs from "fs";
 import path from "path";
+import ytdl from "@distube/ytdl-core";
 
 const app = express();
-const PORT = process.env.PORT || 10000;
-const __dirname = path.resolve();
-
 app.use(cors());
-app.use(express.static(__dirname)); // IMPORTANT!! Serves index.html
+app.use(express.static("public"));
+app.use(express.json());
 
-// 🟦 Fix: Home route must serve index.html (not text)
+const upload = multer({ dest: "uploads/" });
+
+// Serve index.html
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(process.cwd(), "index.html"));
 });
 
-// ------------------ VIDEO UPLOAD (LOCAL VIDEO TO MP3) ------------------
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "./uploads/"),
-  filename: (req, file, cb) =>
-    cb(null, Date.now() + "-" + file.originalname),
-});
-
-const upload = multer({ storage });
-
-app.post("/upload", upload.single("video"), (req, res) => {
-  if (!req.file) return res.status(400).json({ error: "No file uploaded" });
-
-  const input = req.file.path;
-  const output = `output/${Date.now()}.mp3`;
-
-  const ffmpeg = require("fluent-ffmpeg");
-  ffmpeg(input)
-    .save(output)
-    .on("end", () => {
-      res.json({ download: "/" + output });
-    })
-    .on("error", () => res.status(500).json({ error: "Conversion failed" }));
-});
-
-// ------------------ YOUTUBE TO MP3 ------------------
-app.post("/yt", async (req, res) => {
+// -------------------------
+// NORMAL VIDEO UPLOAD → AUDIO
+// -------------------------
+app.post("/upload", upload.single("video"), async (req, res) => {
   try {
-    const { url } = req.query;
-    if (!ytdl.validateURL(url))
-      return res.status(400).json({ error: "Invalid YouTube URL" });
+    const format = req.body.format || "mp3";
+    const inputPath = req.file.path;
+    const outputPath = `output/${req.file.filename}.${format}`;
 
-    const id = Date.now();
-    const filePath = `output/${id}.mp3`;
+    const { exec } = await import("child_process");
+    exec(`ffmpeg -i ${inputPath} ${outputPath}`, (error) => {
+      fs.unlinkSync(inputPath);
 
-    ytdl(url, { filter: "audioonly" })
-      .pipe(fs.createWriteStream(filePath))
-      .on("finish", () => res.json({ download: "/" + filePath }))
-      .on("error", () => res.status(500).json({ error: "Download failed" }));
-  } catch (err) {
+      if (error) {
+        return res.status(500).json({ error: "Conversion failed" });
+      }
+
+      res.json({
+        download: `/download/${req.file.filename}.${format}`,
+      });
+    });
+  } catch {
     res.status(500).json({ error: "Server error" });
   }
 });
 
-// ------------------ START SERVER ------------------
-app.listen(PORT, () => {
-  console.log("Server running on PORT", PORT);
+// -------------------------
+// YOUTUBE URL → MP3
+// -------------------------
+app.post("/youtube", async (req, res) => {
+  try {
+    const { url } = req.body;
+    if (!ytdl.validateURL(url)) {
+      return res.status(400).json({ error: "Invalid YouTube URL" });
+    }
+
+    const id = Date.now();
+    const output = `output/${id}.mp3`;
+
+    const stream = ytdl(url, { filter: "audioonly" });
+    const ffmpeg = await import("fluent-ffmpeg");
+
+    ffmpeg.default(stream)
+      .audioBitrate(128)
+      .save(output)
+      .on("end", () => {
+        res.json({ download: `/download/${id}.mp3` });
+      })
+      .on("error", () => {
+        res.status(500).json({ error: "Conversion failed" });
+      });
+
+  } catch (e) {
+    res.status(500).json({ error: "YouTube processing error" });
+  }
 });
+
+// -------------------------
+
+app.get("/download/:file", (req, res) => {
+  const filePath = path.join("output", req.params.file);
+  if (!fs.existsSync(filePath)) return res.status(404).send("File not found");
+  res.download(filePath);
+});
+
+app.listen(10000, () =>
+  console.log("🚀 Server running on PORT 10000")
+);
