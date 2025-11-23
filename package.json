@@ -1,7 +1,7 @@
 {
   "name": "video-to-audio-converter",
   "version": "1.0.0",
-  "description": "Video/YouTube to MP3 converter with drag-drop, multi-format, and premium UI.",
+  "description": "Video & YouTube to MP3 converter with drag & drop, multi-format, premium UI, and Google AdSense.",
   "main": "server.js",
   "type": "module",
   "scripts": {
