@@ -2,119 +2,90 @@ import express from "express";
 import cors from "cors";
 import multer from "multer";
 import fs from "fs";
-import ytdl from "ytdl-core";
-import fluentFfmpeg from "fluent-ffmpeg";
 import path from "path";
-import { fileURLToPath } from "url";
+import ffmpeg from "fluent-ffmpeg";
+import ytdl from "ytdl-core";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.static("public"));
 
-// Path helpers for ES Modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
+const upload = multer({ dest: "uploads/" });
 
-// Serve static frontend + output files
-app.use(express.static(__dirname));
-app.use(express.static("output"));
-app.use(express.static("uploads"));
-
-// Ensure required folders exist
-if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
-if (!fs.existsSync("output")) fs.mkdirSync("output");
-
-// Multer storage (for video upload)
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, "uploads/"),
-  filename: (req, file, cb) =>
-    cb(null, `${Date.now()}-${file.originalname.replace(/\s/g, "")}`)
+// =======================================
+// ROOT CHECK
+// =======================================
+app.get("/", (req, res) => {
+  res.send("Video/YouTube to MP3 Converter Running ✔️");
 });
 
-const upload = multer({ storage });
-
-/* ===========================================
-    1) LOCAL VIDEO → MP3
-=========================================== */
-app.post("/upload", upload.single("video"), (req, res) => {
-  try {
-    const inputPath = req.file.path;
-    const output = `output/${Date.now()}.mp3`;
-
-    fluentFfmpeg(inputPath)
-      .audioCodec("libmp3lame")
-      .on("end", () => {
-        fs.unlinkSync(inputPath); // delete uploaded video
-        res.json({ download: `/${output}` });
-      })
-      .on("error", (err) => {
-        console.error("FFmpeg video error:", err);
-        res.status(500).json({ error: "Conversion error" });
-      })
-      .save(output);
-
-  } catch (error) {
-    console.error("Upload error:", error);
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-/* ===========================================
-    2) YOUTUBE → MP3 (SAFE FOR RENDER)
-=========================================== */
+// =======================================
+// YOUTUBE → MP3 FIXED
+// =======================================
 app.post("/youtube", async (req, res) => {
   try {
-    const url = req.body.url;
+    const { url } = req.body;
 
-    if (!ytdl.validateURL(url))
-      return res.json({ error: "Invalid YouTube URL" });
+    if (!ytdl.validateURL(url)) {
+      return res.status(400).json({ error: "Invalid YouTube URL" });
+    }
 
-    const tempFile = `uploads/${Date.now()}.mp4`;
-    const output = `output/${Date.now()}.mp3`;
+    const info = await ytdl.getInfo(url);
+    const title = info.videoDetails.title.replace(/[^a-zA-Z0-9]/g, "_");
+    const outputPath = `output/${title}.mp3`;
 
-    // Step 1: Download YouTube audio
-    const audioStream = ytdl(url, { quality: "highestaudio" });
-    const writeStream = fs.createWriteStream(tempFile);
-
-    audioStream.pipe(writeStream);
-
-    writeStream.on("finish", () => {
-      // Step 2: Convert to MP3
-      fluentFfmpeg(tempFile)
-        .audioCodec("libmp3lame")
-        .on("end", () => {
-          if (fs.existsSync(tempFile)) fs.unlinkSync(tempFile);
-          res.json({ download: `/${output}` });
-        })
-        .on("error", (err) => {
-          console.error("FFmpeg YT error:", err);
-          res.json({ error: "Conversion failed" });
-        })
-        .save(output);
+    const stream = ytdl(url, {
+      quality: "highestaudio",
+      requestOptions: {
+        headers: {
+          "User-Agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120 Safari/537.36",
+          "Accept-Language": "en-US,en;q=0.9",
+        },
+      },
+      highWaterMark: 1 << 25, // 32 MB
     });
 
-    writeStream.on("error", () => {
-      return res.json({ error: "YouTube download failed" });
-    });
-
-  } catch (error) {
-    console.error("YT Fatal error:", error);
-    res.json({ error: "Server error" });
+    ffmpeg(stream)
+      .audioCodec("libmp3lame")
+      .save(outputPath)
+      .on("end", () => {
+        return res.json({
+          download: `https://video-to-audio-converter-2.onrender.com/${outputPath}`,
+        });
+      })
+      .on("error", (err) => {
+        console.error("FFmpeg Error:", err);
+        res.status(500).json({ error: "Conversion failed" });
+      });
+  } catch (err) {
+    console.error("YouTube Error:", err);
+    res.status(500).json({ error: "YouTube download failed" });
   }
 });
 
-/* ===========================================
-    3) SERVE index.html
-=========================================== */
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+// =======================================
+// VIDEO FILE → MP3
+// =======================================
+app.post("/upload", upload.single("video"), (req, res) => {
+  const file = req.file;
+  const outPath = `output/${file.filename}.mp3`;
+
+  ffmpeg(file.path)
+    .output(outPath)
+    .on("end", () => {
+      fs.unlinkSync(file.path);
+      res.json({
+        download: `https://video-to-audio-converter-2.onrender.com/${outPath}`,
+      });
+    })
+    .on("error", (err) => {
+      console.error(err);
+      res.status(500).json({ error: "Conversion failed" });
+    })
+    .run();
 });
 
-/* ===========================================
-     START SERVER
-=========================================== */
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () =>
-  console.log(`Server running on PORT ${PORT}`)
-);
+// =======================================
+app.listen(10000, () => console.log("Server running on PORT 10000"));
