@@ -1,3 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Video to Audio Converter</title>
+
+<style>
+body {
+    margin: 0;
+    font-family: Poppins, sans-serif;
+    background: linear-gradient(135deg, #000428, #004e92);
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+/* Glass card */
+.container {
+    width: 100%;
+    max-width: 480px;
+    background: rgba(255,255,255,0.08);
+    backdrop-filter: blur(12px);
+    padding: 25px;
+    border-radius: 20px;
+    box-shadow: 0 6px 40px rgba(0,255,255,0.4);
+    text-align: center;
+    animation: fadeIn 0.8s ease;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: scale(0.9); }
+    to { opacity: 1; transform: scale(1); }
+}
+
+.drop-zone {
+    border: 2px dashed cyan;
+    padding: 30px;
+    border-radius: 15px;
+    margin-top: 20px;
+    background: rgba(255,255,255,0.05);
+    transition: 0.25s;
+    cursor: pointer;
+}
+
+.drop-zone:hover {
+    transform: scale(1.03);
+}
+
+.drop-zone.dragover {
+    background: rgba(0,255,255,0.2);
+}
+
+.file-item {
+    background: rgba(255,255,255,0.1);
+    margin-top: 12px;
+    padding: 12px;
+    border-radius: 12px;
+}
+
+button {
+    margin-top: 25px;
+    padding: 14px 20px;
+    width: 100%;
+    border: none;
+    border-radius: 12px;
+    background: #00eaff;
+    color: #000;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 0 20px rgba(0,255,255,0.7);
+    transition: 0.2s;
+}
+
+button:hover {
+    transform: scale(1.05);
+}
+</style>
+</head>
+
+<body>
+
+<div class="container">
+
+    <h2 style="color:white;">Video to Audio Converter</h2>
+
+    <div id="dropZone" class="drop-zone">
+        Drag & Drop Videos Here<br><br>or Click to Select
+    </div>
+
+    <input type="file" id="fileInput" accept="video/*" multiple style="display:none;">
+
+    <select id="format" style="margin-top:15px;padding:10px;border-radius:10px;width:100%">
+      <option value="mp3">MP3</option>
+      <option value="wav">WAV</option>
+      <option value="aac">AAC</option>
+      <option value="ogg">OGG</option>
+    </select>
+
+    <div id="fileList"></div>
+
+    <button onclick="startConversion()">Convert All</button>
+
+</div>
+
 <script>
 const dropZone = document.getElementById("dropZone");
 const fileInput = document.getElementById("fileInput");
@@ -6,13 +114,9 @@ const formatSelect = document.getElementById("format");
 
 let files = [];
 
-// Click → open file picker
 dropZone.onclick = () => fileInput.click();
-
-// File picker selected
 fileInput.onchange = (e) => handleFiles(e.target.files);
 
-// Drag events
 dropZone.addEventListener("dragover", (e) => {
     e.preventDefault();
     dropZone.classList.add("dragover");
@@ -22,14 +126,12 @@ dropZone.addEventListener("dragleave", () => {
     dropZone.classList.remove("dragover");
 });
 
-// Drop files
 dropZone.addEventListener("drop", (e) => {
     e.preventDefault();
     dropZone.classList.remove("dragover");
     handleFiles(e.dataTransfer.files);
 });
 
-// Add files to UI list
 function handleFiles(selected) {
     for (let file of selected) {
         const id = Math.random().toString(36).substring(7);
@@ -38,41 +140,34 @@ function handleFiles(selected) {
 
         fileList.innerHTML += `
             <div class="file-item" id="file-${id}">
-                <strong>${file.name}</strong>
+                <strong>${file.name}</strong><br>
                 <progress id="progress-${id}" max="100" value="0"></progress>
-                <a id="link-${id}" style="display:none;color:lime;display:block;margin-top:8px">Download</a>
+                <a id="link-${id}" style="display:none;color:lime;display:block;margin-top:8px"></a>
             </div>
         `;
     }
 }
 
-// Convert all files
 async function startConversion() {
     for (let file of files) {
         await convertFile(file);
     }
 }
 
-// Convert single file
 async function convertFile(file) {
     const id = file._id;
     const progressBar = document.getElementById(`progress-${id}`);
 
     const fd = new FormData();
     fd.append("video", file);
-
-    // ✅ STEP 4.2 (FULL CODE REPLACE)
-    // Add selected output format to request
     fd.append("format", formatSelect.value);
 
-    // Use XMLHttpRequest for real upload progress
     const xhr = new XMLHttpRequest();
     xhr.open("POST", "/upload");
 
     xhr.upload.onprogress = (e) => {
         if (e.lengthComputable) {
-            const percent = (e.loaded / e.total) * 100;
-            progressBar.value = percent;
+            progressBar.value = (e.loaded / e.total) * 100;
         }
     };
 
@@ -82,10 +177,14 @@ async function convertFile(file) {
 
         const link = document.getElementById(`link-${id}`);
         link.href = data.download;
-        link.textContent = `Download (${formatSelect.value.toUpperCase()})`;
+        link.textContent = `Download ${formatSelect.value.toUpperCase()}`;
         link.style.display = "block";
     };
 
     xhr.send(fd);
 }
 </script>
+
+</body>
+</html>
+
