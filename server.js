@@ -7,70 +7,91 @@ import fluentFfmpeg from "fluent-ffmpeg";
 import ffmpegPath from "ffmpeg-static";
 
 const app = express();
-app.use(cors());
-app.use(express.static("output"));
-app.use(express.static("."));
 
+// Enable CORS + Static File Serving
+app.use(cors());
+
+// 🔥 FIX for BLANK PAGE on Render (serve root folder)
+app.use(express.static(process.cwd()));
+
+// Serve converted audio files
+app.use(express.static("output"));
+
+// Setup FFmpeg static path
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
-// Multer storage
+// Create upload & output folders if missing
+if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+if (!fs.existsSync("output")) fs.mkdirSync("output");
+
+// Multer Storage
 const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, "uploads/"),
-    filename: (req, file, cb) =>
-        cb(null, Date.now() + path.extname(file.originalname))
+  destination: (req, file, cb) => cb(null, "uploads/"),
+  filename: (req, file, cb) =>
+    cb(null, Date.now() + path.extname(file.originalname))
 });
 
 const upload = multer({
-    storage,
-    limits: { fileSize: 200 * 1024 * 1024 }
+  storage,
+  limits: { fileSize: 200 * 1024 * 1024 } // 200MB
 });
 
-// Upload route
+// ----------------------------------------
+// 🔥 Video Upload & Convert Route
+// ----------------------------------------
 app.post("/upload", upload.single("video"), (req, res) => {
-    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
+  if (!req.file) {
+    return res.status(400).json({ error: "No video uploaded!" });
+  }
 
-    const input = req.file.path;
-    const format = req.body.format || "mp3";
-    const outputName = `${Date.now()}.${format}`;
-    const outputPath = `output/${outputName}`;
+  const inputPath = req.file.path;
+  const selectedFormat = req.body.format || "mp3";
+  const outputName = `${Date.now()}.${selectedFormat}`;
+  const outputPath = `output/${outputName}`;
 
-    let audioCodec = "libmp3lame";
+  // Audio codecs based on selected output
+  let audioCodec = "libmp3lame";
 
-    switch (format) {
-        case "wav":
-            audioCodec = "pcm_s16le";
-            break;
-        case "aac":
-            audioCodec = "aac";
-            break;
-        case "ogg":
-            audioCodec = "libvorbis";
-            break;
-        default:
-            audioCodec = "libmp3lame";
-    }
+  switch (selectedFormat) {
+    case "wav":
+      audioCodec = "pcm_s16le";
+      break;
+    case "aac":
+      audioCodec = "aac";
+      break;
+    case "ogg":
+      audioCodec = "libvorbis";
+      break;
+    default:
+      audioCodec = "libmp3lame";
+  }
 
-    fluentFfmpeg(input)
-        .noVideo()
-        .audioCodec(audioCodec)
-        .save(outputPath)
-        .on("end", () => {
-            fs.unlinkSync(input);
-            res.json({
-                success: true,
-                download: `/${outputName}`
-            });
-        })
-        .on("error", (err) => {
-            res.status(500).json({ error: "Conversion failed", details: err.message });
-        });
+  fluentFfmpeg(inputPath)
+    .noVideo()
+    .audioCodec(audioCodec)
+    .on("end", () => {
+      fs.unlinkSync(inputPath); // Delete temp video
+      res.json({
+        success: true,
+        download: `/${outputName}`
+      });
+    })
+    .on("error", (err) => {
+      console.error("FFmpeg error:", err);
+      res.status(500).json({ error: "Conversion failed", details: err.message });
+    })
+    .save(outputPath);
 });
 
-// Serve frontend
+// ----------------------------------------
+// 🔥 Serve index.html (Frontend)
+// ----------------------------------------
 app.get("/", (req, res) => {
-    res.sendFile(path.join(process.cwd(), "index.html"));
+  res.sendFile(path.join(process.cwd(), "index.html"));
 });
 
-// Start server
+// ----------------------------------------
+// Start server (Render uses PORT env var)
+// ----------------------------------------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
