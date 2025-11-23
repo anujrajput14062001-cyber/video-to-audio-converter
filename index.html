@@ -1,284 +1,201 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Video & YouTube to MP3 Converter – Premium</title>
-<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Video / YouTube to MP3 Converter</title>
 
-<!-- Google AdSense -->
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9616159709699470"
-     crossorigin="anonymous"></script>
+  <!-- Google Adsense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9616159709699470"
+    crossorigin="anonymous"></script>
 
-<style>
-:root {
-    --bg: #f0f0f3;
-    --card-bg: rgba(255, 255, 255, 0.6);
-    --text: #111;
-    --subtext: #333;
-    --border: rgba(0,0,0,0.1);
-    --accent: #007aff;
-    --accent-glow: rgba(0,122,255,0.4);
-    --progress: #007aff;
-}
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: radial-gradient(circle at center, #001f3f, #000814);
+      color: white;
+      text-align: center;
+      padding: 20px;
+    }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: radial-gradient(circle at top, #020817, #000);
-    --card-bg: rgba(255,255,255,0.06);
-    --text: #fff;
-    --subtext: #bbb;
-    --border: rgba(255,255,255,0.15);
-    --accent: #00eaff;
-    --accent-glow: rgba(0,255,255,0.4);
-    --progress: #00eaff;
-  }
-}
+    .container {
+      max-width: 600px;
+      margin: auto;
+      padding: 25px;
+      background: rgba(255, 255, 255, 0.06);
+      border-radius: 15px;
+      box-shadow: 0 0 40px rgba(0, 255, 255, 0.2);
+      backdrop-filter: blur(10px);
+      animation: fadeIn 0.8s ease-in-out;
+    }
 
-body {
-    margin: 0;
-    font-family: Poppins, sans-serif;
-    background: var(--bg);
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 25px;
-    color: var(--text);
-}
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-.container {
-    width: 100%;
-    max-width: 480px;
-    background: var(--card-bg);
-    backdrop-filter: blur(18px);
-    padding: 32px;
-    border-radius: 22px;
-    box-shadow: 0 0 25px var(--accent-glow);
-    border: 1px solid var(--border);
-    animation: fadeIn 0.8s ease;
-    text-align: center;
-}
+    h2 {
+      margin-bottom: 10px;
+    }
 
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(20px); }
-  to { opacity: 1; transform: translateY(0); }
-}
+    .drop-zone {
+      padding: 35px;
+      border: 2px dashed cyan;
+      border-radius: 12px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      transition: 0.3s;
+    }
 
-.drop-zone {
-    border: 2px dashed var(--accent);
-    padding: 35px;
-    border-radius: 18px;
-    background: rgba(255,255,255,0.04);
-    transition: 0.25s;
-    cursor: pointer;
-    color: var(--subtext);
-}
-.drop-zone:hover {
-    transform: scale(1.03);
-    box-shadow: 0 0 12px var(--accent-glow);
-}
-.drop-zone.dragover {
-    background: rgba(0,255,255,0.15);
-}
+    .drop-zone:hover {
+      background: rgba(0, 255, 255, 0.15);
+    }
 
-.file-item {
-    background: rgba(255,255,255,0.08);
-    padding: 14px;
-    margin-top: 14px;
-    border-radius: 14px;
-    border: 1px solid var(--border);
-}
+    select, input {
+      width: 95%;
+      padding: 12px;
+      border-radius: 8px;
+      border: none;
+      margin-bottom: 15px;
+      font-size: 16px;
+    }
 
-progress {
-    width: 100%;
-    height: 8px;
-    margin-top: 10px;
-}
-progress::-webkit-progress-value {
-    background: var(--progress);
-}
+    button {
+      width: 95%;
+      padding: 15px;
+      font-size: 18px;
+      background: cyan;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      color: black;
+      font-weight: bold;
+      transition: 0.3s;
+    }
 
-button {
-    margin-top: 25px;
-    padding: 14px;
-    width: 100%;
-    border: none;
-    border-radius: 14px;
-    background: var(--accent);
-    color: #000;
-    font-size: 17px;
-    font-weight: 600;
-    cursor: pointer;
-    box-shadow: 0 0 16px var(--accent-glow);
-}
-button:hover {
-    transform: scale(1.04);
-}
+    button:hover {
+      background: #00eaff;
+      transform: scale(1.03);
+    }
 
-select, input[type="text"] {
-    margin-top: 18px;
-    padding: 12px;
-    width: 100%;
-    border-radius: 12px;
-    border: 1px solid var(--border);
-    background: rgba(255,255,255,0.1);
-    color: var(--text);
-}
-</style>
+    .progress {
+      width: 90%;
+      height: 10px;
+      margin: 10px auto;
+    }
+
+    .download-link {
+      color: #00ff00;
+      font-size: 18px;
+      display: block;
+      margin-top: 10px;
+    }
+
+    .section-title {
+      margin-top: 35px;
+      font-size: 22px;
+      font-weight: bold;
+      text-decoration: underline;
+    }
+  </style>
 </head>
 
 <body>
 
-<div class="container">
+  <div class="container">
+    <h2>🎵 Video / YouTube to MP3 Converter</h2>
 
-    <h2>Universal Video → MP3 Converter</h2>
+    <!-- 🔹 YouTube Conversion Section -->
+    <div class="section-title">YouTube to MP3</div>
 
-    <!-- TOP AD -->
-    <div style="margin:20px 0;">
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-client="ca-pub-9616159709699470"
-           data-ad-slot="1111111111"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
+    <input type="text" id="ytUrl" placeholder="Paste YouTube URL here..." />
 
-    <input id="ytUrl" type="text" placeholder="Paste YouTube URL here">
-    <button onclick="convertYoutube()">Convert YouTube → MP3</button>
+    <button onclick="convertYouTube()">Convert YouTube → MP3</button>
 
-    <!-- MIDDLE AD -->
-    <div style="margin:18px 0;">
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-client="ca-pub-9616159709699470"
-           data-ad-slot="2222222222"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
+    <div id="ytResult"></div>
 
-    <hr>
 
-    <div id="dropZone" class="drop-zone">
-        Drag & Drop Videos Here <br> or Tap to Select
-    </div>
+    <!-- 🔹 Video Upload Section -->
+    <div class="section-title">Upload Video to Convert</div>
 
-    <input type="file" id="fileInput" accept="video/*" multiple hidden>
+    <div id="dropZone" class="drop-zone">Drag & Drop Videos Here<br>or Click to Select</div>
+    <input type="file" id="videoInput" accept="video/*" style="display: none">
 
-    <select id="format">
-      <option value="mp3">MP3 (Recommended)</option>
+    <select id="formatSelect">
+      <option value="mp3">MP3</option>
       <option value="wav">WAV</option>
-      <option value="aac">AAC</option>
       <option value="ogg">OGG</option>
     </select>
 
-    <div id="fileList"></div>
+    <button onclick="convertAll()">Convert All</button>
 
-    <!-- BOTTOM AD -->
-    <div style="margin:18px 0;">
-      <ins class="adsbygoogle"
-           style="display:block"
-           data-ad-client="ca-pub-9616159709699470"
-           data-ad-slot="3333333333"
-           data-ad-format="auto"
-           data-full-width-responsive="true"></ins>
-      <script>(adsbygoogle = window.adsbygoogle || []).push({});</script>
-    </div>
+    <progress id="progressBar" class="progress" value="0" max="100"></progress>
 
-    <button onclick="startConversion()">Convert All Videos</button>
+    <div id="downloadLinks"></div>
+  </div>
 
-</div>
+  <script>
+    const dropZone = document.getElementById("dropZone");
+    const videoInput = document.getElementById("videoInput");
 
-<script>
-/* ================== VIDEO UPLOAD ================== */
-const dropZone = document.getElementById("dropZone");
-const fileInput = document.getElementById("fileInput");
-const fileList = document.getElementById("fileList");
-const formatSelect = document.getElementById("format");
-let files = [];
+    dropZone.onclick = () => videoInput.click();
+    dropZone.ondragover = (e) => { e.preventDefault(); dropZone.style.background = "rgba(0,255,255,0.2)"; };
+    dropZone.ondragleave = () => dropZone.style.background = "transparent";
 
-dropZone.onclick = () => fileInput.click();
-fileInput.onchange = e => handleFiles(e.target.files);
+    dropZone.ondrop = (e) => {
+      e.preventDefault();
+      dropZone.style.background = "transparent";
+      videoInput.files = e.dataTransfer.files;
+    };
 
-dropZone.addEventListener("dragover", e => {
-    e.preventDefault();
-    dropZone.classList.add("dragover");
-});
-dropZone.addEventListener("dragleave", () => dropZone.classList.remove("dragover"));
-dropZone.addEventListener("drop", e => {
-    e.preventDefault();
-    dropZone.classList.remove("dragover");
-    handleFiles(e.dataTransfer.files);
-});
+    // ================================
+    // 🎥 Video to MP3 Conversion
+    // ================================
+    function convertAll() {
+      const file = videoInput.files[0];
+      if (!file) return alert("Please select a video file first.");
 
-function handleFiles(selected) {
-    for (let file of selected) {
-        const id = Math.random().toString(36).substring(7);
-        file._id = id;
-        files.push(file);
+      const fd = new FormData();
+      fd.append("video", file);
 
-        fileList.innerHTML += `
-          <div class="file-item">
-            <strong>${file.name}</strong>
-            <progress id="p-${id}" max="100" value="0"></progress>
-            <a id="d-${id}" style="display:none;margin-top:8px;color:var(--accent);"></a>
-          </div>`;
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/upload");
+      xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+          document.getElementById("progressBar").value = (e.loaded / e.total) * 100;
+        }
+      };
+
+      xhr.onload = () => {
+        const data = JSON.parse(xhr.responseText);
+        document.getElementById("downloadLinks").innerHTML =
+          `<a class="download-link" href="${data.download}" target="_blank">Download MP3</a>`;
+      };
+
+      xhr.send(fd);
     }
-}
 
-async function startConversion() {
-    for (let file of files) await convertFile(file);
-}
+    // ================================
+    // 🎵 YouTube Conversion
+    // ================================
+    async function convertYouTube() {
+      const url = document.getElementById("ytUrl").value;
+      if (!url) return alert("Enter a YouTube URL");
 
-function convertFile(file) {
-    return new Promise(resolve => {
-        const id = file._id;
-        const pbar = document.getElementById(`p-${id}`);
-
-        const fd = new FormData();
-        fd.append("video", file);
-        fd.append("format", formatSelect.value);
-
-        const xhr = new XMLHttpRequest();
-        xhr.open("POST", "/upload");
-
-        xhr.upload.onprogress = e => {
-            if (e.lengthComputable) pbar.value = (e.loaded / e.total) * 100;
-        };
-
-        xhr.onload = () => {
-            const r = JSON.parse(xhr.responseText);
-            pbar.value = 100;
-            const link = document.getElementById(`d-${id}`);
-            link.href = r.download;
-            link.textContent = "⬇ Download";
-            link.style.display = "block";
-            resolve();
-        };
-
-        xhr.send(fd);
-    });
-}
-
-/* ================== YOUTUBE URL ================== */
-function convertYoutube() {
-    const url = document.getElementById("ytUrl").value.trim();
-    if (!url) return alert("Enter YouTube URL");
-
-    fetch("/youtube", {
+      let res = await fetch("/youtube", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url })
-    })
-    .then(r => r.json())
-    .then(r => {
-        if (r.error) return alert(r.error);
-        window.location.href = r.download;
-    });
-}
-</script>
+      });
+
+      let data = await res.json();
+      if (data.error) return alert("Conversion failed");
+
+      document.getElementById("ytResult").innerHTML =
+        `<a class="download-link" href="${data.download}" target="_blank">Download MP3</a>`;
+    }
+  </script>
 
 </body>
 </html>
