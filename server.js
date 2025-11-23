@@ -1,20 +1,41 @@
+import express from "express";
+import multer from "multer";
+import path from "path";
+import fs from "fs";
+import cors from "cors";
+import fluentFfmpeg from "fluent-ffmpeg";
+import ffmpegPath from "ffmpeg-static";
+
+const app = express();
+app.use(cors());
+app.use(express.static("output"));
+app.use(express.static("."));
+
+fluentFfmpeg.setFfmpegPath(ffmpegPath);
+
+// Multer storage
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => cb(null, "uploads/"),
+    filename: (req, file, cb) =>
+        cb(null, Date.now() + path.extname(file.originalname))
+});
+
+const upload = multer({
+    storage,
+    limits: { fileSize: 200 * 1024 * 1024 }
+});
+
+// Upload route
 app.post("/upload", upload.single("video"), (req, res) => {
-    if (!req.file) {
-        return res.status(400).json({ error: "No file uploaded" });
-    }
+    if (!req.file) return res.status(400).json({ error: "No file uploaded" });
 
     const input = req.file.path;
-
-    // Get output format (mp3, wav, aac, ogg)
     const format = req.body.format || "mp3";
-
-    // Output file name
     const outputName = `${Date.now()}.${format}`;
-    const output = `output/${outputName}`;
+    const outputPath = `output/${outputName}`;
 
     let audioCodec = "libmp3lame";
 
-    // Select correct codec
     switch (format) {
         case "wav":
             audioCodec = "pcm_s16le";
@@ -26,24 +47,30 @@ app.post("/upload", upload.single("video"), (req, res) => {
             audioCodec = "libvorbis";
             break;
         default:
-            audioCodec = "libmp3lame"; // mp3
+            audioCodec = "libmp3lame";
     }
 
     fluentFfmpeg(input)
         .noVideo()
         .audioCodec(audioCodec)
-        .on("error", (err) => {
-            console.error("FFmpeg error:", err);
-            res.status(500).json({ error: "Conversion failed", ffmpeg: err.message });
-        })
+        .save(outputPath)
         .on("end", () => {
-            // Delete input video after converting
-            try { fs.unlinkSync(input); } catch (e) {}
-
+            fs.unlinkSync(input);
             res.json({
-                download: `/${outputName}`,
-                format: format.toUpperCase()
+                success: true,
+                download: `/${outputName}`
             });
         })
-        .save(output);
+        .on("error", (err) => {
+            res.status(500).json({ error: "Conversion failed", details: err.message });
+        });
 });
+
+// Serve frontend
+app.get("/", (req, res) => {
+    res.sendFile(path.join(process.cwd(), "index.html"));
+});
+
+// Start server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
