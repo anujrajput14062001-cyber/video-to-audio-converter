@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: video-to-audio-converter
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: "npm install"
+    startCommand: "npm start"
+    autoDeploy: true
+    envVars: []

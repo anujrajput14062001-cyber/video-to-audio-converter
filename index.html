@@ -1,0 +1,91 @@
+<script>
+const dropZone = document.getElementById("dropZone");
+const fileInput = document.getElementById("fileInput");
+const fileList = document.getElementById("fileList");
+const formatSelect = document.getElementById("format");
+
+let files = [];
+
+// Click → open file picker
+dropZone.onclick = () => fileInput.click();
+
+// File picker selected
+fileInput.onchange = (e) => handleFiles(e.target.files);
+
+// Drag events
+dropZone.addEventListener("dragover", (e) => {
+    e.preventDefault();
+    dropZone.classList.add("dragover");
+});
+
+dropZone.addEventListener("dragleave", () => {
+    dropZone.classList.remove("dragover");
+});
+
+// Drop files
+dropZone.addEventListener("drop", (e) => {
+    e.preventDefault();
+    dropZone.classList.remove("dragover");
+    handleFiles(e.dataTransfer.files);
+});
+
+// Add files to UI list
+function handleFiles(selected) {
+    for (let file of selected) {
+        const id = Math.random().toString(36).substring(7);
+        file._id = id;
+        files.push(file);
+
+        fileList.innerHTML += `
+            <div class="file-item" id="file-${id}">
+                <strong>${file.name}</strong>
+                <progress id="progress-${id}" max="100" value="0"></progress>
+                <a id="link-${id}" style="display:none;color:lime;display:block;margin-top:8px">Download</a>
+            </div>
+        `;
+    }
+}
+
+// Convert all files
+async function startConversion() {
+    for (let file of files) {
+        await convertFile(file);
+    }
+}
+
+// Convert single file
+async function convertFile(file) {
+    const id = file._id;
+    const progressBar = document.getElementById(`progress-${id}`);
+
+    const fd = new FormData();
+    fd.append("video", file);
+
+    // ✅ STEP 4.2 (FULL CODE REPLACE)
+    // Add selected output format to request
+    fd.append("format", formatSelect.value);
+
+    // Use XMLHttpRequest for real upload progress
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", "/upload");
+
+    xhr.upload.onprogress = (e) => {
+        if (e.lengthComputable) {
+            const percent = (e.loaded / e.total) * 100;
+            progressBar.value = percent;
+        }
+    };
+
+    xhr.onload = () => {
+        const data = JSON.parse(xhr.responseText);
+        progressBar.value = 100;
+
+        const link = document.getElementById(`link-${id}`);
+        link.href = data.download;
+        link.textContent = `Download (${formatSelect.value.toUpperCase()})`;
+        link.style.display = "block";
+    };
+
+    xhr.send(fd);
+}
+</script>
