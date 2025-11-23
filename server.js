@@ -4,11 +4,20 @@ import multer from "multer";
 import fs from "fs";
 import ytdl from "ytdl-core";
 import fluentFfmpeg from "fluent-ffmpeg";
+import path from "path";
+import { fileURLToPath } from "url";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Path helpers for ES Modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Serve static frontend + output files
+app.use(express.static(__dirname));
 app.use(express.static("output"));
 app.use(express.static("uploads"));
 
@@ -16,7 +25,7 @@ app.use(express.static("uploads"));
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 if (!fs.existsSync("output")) fs.mkdirSync("output");
 
-// Multer storage for video uploads
+// Multer storage (for video upload)
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) =>
@@ -25,9 +34,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage });
 
-// =============================
-//  1) LOCAL VIDEO → MP3
-// =============================
+/* ===========================================
+    1) LOCAL VIDEO → MP3
+=========================================== */
 app.post("/upload", upload.single("video"), (req, res) => {
   try {
     const inputPath = req.file.path;
@@ -36,7 +45,7 @@ app.post("/upload", upload.single("video"), (req, res) => {
     fluentFfmpeg(inputPath)
       .audioCodec("libmp3lame")
       .on("end", () => {
-        fs.unlinkSync(inputPath); // remove original video
+        fs.unlinkSync(inputPath); // delete uploaded video
         res.json({ download: `/${output}` });
       })
       .on("error", (err) => {
@@ -51,9 +60,9 @@ app.post("/upload", upload.single("video"), (req, res) => {
   }
 });
 
-// =============================
-//  2) YOUTUBE → MP3 (RENDER SAFE)
-// =============================
+/* ===========================================
+    2) YOUTUBE → MP3 (SAFE FOR RENDER)
+=========================================== */
 app.post("/youtube", async (req, res) => {
   try {
     const url = req.body.url;
@@ -64,14 +73,14 @@ app.post("/youtube", async (req, res) => {
     const tempFile = `uploads/${Date.now()}.mp4`;
     const output = `output/${Date.now()}.mp3`;
 
-    // STEP 1: Download best audio to temporary file
+    // Step 1: Download YouTube audio
     const audioStream = ytdl(url, { quality: "highestaudio" });
     const writeStream = fs.createWriteStream(tempFile);
 
     audioStream.pipe(writeStream);
 
     writeStream.on("finish", () => {
-      // STEP 2: Convert the downloaded audio
+      // Step 2: Convert to MP3
       fluentFfmpeg(tempFile)
         .audioCodec("libmp3lame")
         .on("end", () => {
@@ -95,15 +104,17 @@ app.post("/youtube", async (req, res) => {
   }
 });
 
-// =============================
-//  HOME ROUTE
-// =============================
+/* ===========================================
+    3) SERVE index.html
+=========================================== */
 app.get("/", (req, res) => {
-  res.send("Video/YouTube to MP3 Converter Running ✔");
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// =============================
-//  START SERVER
-// =============================
+/* ===========================================
+     START SERVER
+=========================================== */
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`Server running on PORT ${PORT}`)
+);
