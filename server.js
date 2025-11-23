@@ -8,23 +8,21 @@ import ffmpegPath from "ffmpeg-static";
 
 const app = express();
 
-// Enable CORS + Static File Serving
+// Enable CORS
 app.use(cors());
 
-// 🔥 FIX for BLANK PAGE on Render (serve root folder)
-app.use(express.static(process.cwd()));
+// Serve index.html and all static frontend files
+app.use(express.static(process.cwd()));   // FIX for blank page
+app.use(express.static("output"));        // Serve converted audio
 
-// Serve converted audio files
-app.use(express.static("output"));
-
-// Setup FFmpeg static path
+// Setup FFmpeg path
 fluentFfmpeg.setFfmpegPath(ffmpegPath);
 
-// Create upload & output folders if missing
+// Make folders if not exist
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 if (!fs.existsSync("output")) fs.mkdirSync("output");
 
-// Multer Storage
+// Multer storage setup
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, "uploads/"),
   filename: (req, file, cb) =>
@@ -36,62 +34,53 @@ const upload = multer({
   limits: { fileSize: 200 * 1024 * 1024 } // 200MB
 });
 
-// ----------------------------------------
-// 🔥 Video Upload & Convert Route
-// ----------------------------------------
+// --------------------------------------
+//  UPLOAD + CONVERT
+// --------------------------------------
 app.post("/upload", upload.single("video"), (req, res) => {
-  if (!req.file) {
-    return res.status(400).json({ error: "No video uploaded!" });
-  }
+  if (!req.file) return res.status(400).json({ error: "No video uploaded" });
 
   const inputPath = req.file.path;
-  const selectedFormat = req.body.format || "mp3";
-  const outputName = `${Date.now()}.${selectedFormat}`;
+  const format = req.body.format || "mp3";
+  const outputName = `${Date.now()}.${format}`;
   const outputPath = `output/${outputName}`;
 
-  // Audio codecs based on selected output
-  let audioCodec = "libmp3lame";
-
-  switch (selectedFormat) {
-    case "wav":
-      audioCodec = "pcm_s16le";
-      break;
-    case "aac":
-      audioCodec = "aac";
-      break;
-    case "ogg":
-      audioCodec = "libvorbis";
-      break;
-    default:
-      audioCodec = "libmp3lame";
-  }
+  // Choose codec
+  let codec = "libmp3lame";
+  if (format === "wav") codec = "pcm_s16le";
+  if (format === "aac") codec = "aac";
+  if (format === "ogg") codec = "libvorbis";
 
   fluentFfmpeg(inputPath)
     .noVideo()
-    .audioCodec(audioCodec)
+    .audioCodec(codec)
     .on("end", () => {
-      fs.unlinkSync(inputPath); // Delete temp video
+      fs.unlinkSync(inputPath); // delete uploaded video
+
+      // FIXED: correct download link
       res.json({
         success: true,
-        download: `/${outputName}`
+        download: `/output/${outputName}`
       });
     })
     .on("error", (err) => {
-      console.error("FFmpeg error:", err);
+      console.error("FFmpeg Error:", err);
       res.status(500).json({ error: "Conversion failed", details: err.message });
     })
     .save(outputPath);
 });
 
-// ----------------------------------------
-// 🔥 Serve index.html (Frontend)
-// ----------------------------------------
+// --------------------------------------
+//  SERVE FRONTEND
+// --------------------------------------
 app.get("/", (req, res) => {
   res.sendFile(path.join(process.cwd(), "index.html"));
 });
 
-// ----------------------------------------
-// Start server (Render uses PORT env var)
-// ----------------------------------------
+// --------------------------------------
+//  START SERVER
+// --------------------------------------
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+app.listen(PORT, () =>
+  console.log(`🚀 Server running on port ${PORT}`)
+);

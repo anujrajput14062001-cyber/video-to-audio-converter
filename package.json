@@ -1,7 +1,7 @@
 {
   "name": "video-to-audio-converter",
   "version": "1.0.0",
-  "description": "Advanced video to audio converter with drag-drop, progress bar, and multi-format support",
+  "description": "Advanced video to audio converter with drag-drop, progress bars, multiple formats, and Render hosting.",
   "main": "server.js",
   "type": "module",
   "scripts": {
