@@ -1,97 +1,220 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>YouTube to MP3 Converter</title>
+  <meta charset="UTF-8">
+  <title>YT Convert Pro – Free MP3 / MP4 Converter – No Login, No Limits</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <!-- SEO -->
+  <meta name="description" content="YT Convert Pro – Free MP3 / MP4 Converter. Convert any YouTube link or video file into MP3 or MP4 instantly. Fast, secure, no login required.">
+  <meta name="keywords" content="youtube to mp3, youtube to mp4, video to audio, mp3 converter, mp4 converter, free converter">
+  <meta name="robots" content="index, follow">
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="YT Convert Pro – Free MP3 / MP4 Converter">
+  <meta property="og:description" content="Convert any video or YouTube URL into MP3 or MP4 instantly.">
+  <meta property="og:image" content="/logo.png">
+  <meta property="og:url" content="https://YOUR-SITE-URL.com">
+
+  <!-- Favicon -->
+  <link rel="icon" href="/favicon.ico">
+  <link rel="icon" type="image/png" sizes="16x16" href="/favicon_16.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon_32.png">
+  <link rel="icon" type="image/png" sizes="64x64" href="/favicon_64.png">
+  <link rel="icon" type="image/png" sizes="192x192" href="/favicon_192.png">
+
+  <!-- Auto Dark/Light -->
+  <meta name="color-scheme" content="light dark">
+
+  <!-- AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-9616159709699470" crossorigin="anonymous"></script>
 
   <style>
     body {
-      background: #001f3f;
-      color: white;
+      margin: 0;
       font-family: Arial, sans-serif;
+      background: #05163d;
+      color: #fff;
       text-align: center;
-      padding: 40px;
     }
-    .box {
-      width: 90%;
-      max-width: 600px;
-      margin: auto;
-      padding: 30px;
-      background: #013a63;
+
+    header {
+      width: 100%;
+      padding: 15px 25px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      background: rgba(0,0,0,0.2);
+      backdrop-filter: blur(10px);
+      border-bottom: 1px solid #0ff3ff44;
+    }
+
+    header img {
+      height: 45px;
+      border-radius: 10px;
+    }
+
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+    }
+
+    .container {
+      max-width: 700px;
+      margin: 40px auto;
+      padding: 25px;
       border-radius: 15px;
-      box-shadow: 0 0 20px cyan;
+      background: rgba(255,255,255,0.07);
+      box-shadow: 0 0 35px rgba(0,255,255,0.15);
+      backdrop-filter: blur(12px);
     }
-    input {
-      width: 95%;
+
+    input, select {
+      width: 90%;
       padding: 12px;
+      margin: 10px auto;
       border-radius: 10px;
       border: none;
-      margin-bottom: 20px;
-      font-size: 18px;
+      font-size: 16px;
     }
+
     button {
-      width: 95%;
+      width: 90%;
       padding: 15px;
-      background: cyan;
+      margin-top: 15px;
+      font-size: 18px;
       border: none;
       border-radius: 10px;
-      font-size: 20px;
       cursor: pointer;
-    }
-    button:hover {
       background: #00eaff;
+      transition: 0.2s;
+    }
+
+    button:hover {
+      background: #00ffff;
+      transform: scale(1.04);
+    }
+
+    .progress {
+      width: 85%;
+      height: 10px;
+      margin: 15px auto;
+    }
+
+    .ad-box {
+      margin: 25px 0;
+      background: rgba(0,0,0,0.3);
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px dashed cyan;
+      color: cyan;
+    }
+
+    a.download-link {
+      color: #00ff9d;
+      font-size: 20px;
+      display: block;
+      margin-top: 12px;
     }
   </style>
 </head>
 
 <body>
-  <h1>YouTube to MP3 Converter 🎵</h1>
-  <div class="box">
-    <input id="ytUrl" placeholder="Enter YouTube URL..." />
 
-    <button onclick="convert()">Convert to MP3</button>
+<header>
+  <img src="logo.png" alt="Logo">
+  <span class="title">YT Convert Pro</span>
+</header>
 
-    <p id="status"></p>
-    <a id="downloadBtn" style="display:none; color:yellow; font-size:20px;" download>⬇ Download MP3</a>
-  </div>
+<div class="container">
 
-  <script>
-    async function convert() {
-      const url = document.getElementById("ytUrl").value;
-      const status = document.getElementById("status");
-      const downloadBtn = document.getElementById("downloadBtn");
+  <!-- TOP ADS -->
+  <div class="ad-box">AdSense Top Ad</div>
 
-      if (!url) {
-        status.innerText = "❌ Please enter a YouTube URL";
-        return;
-      }
+  <!-- YOUTUBE TO MP3 / MP4 -->
+  <h2>YouTube Converter</h2>
+  <input id="ytURL" placeholder="Paste YouTube video link...">
 
-      status.innerText = "⏳ Converting... Please wait...";
+  <select id="ytFormat">
+    <option value="mp3">MP3</option>
+    <option value="mp4">MP4</option>
+  </select>
 
-      try {
-        const res = await fetch("/api/ytmp3", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
-        });
+  <button onclick="convertYT()">Convert</button>
 
-        const data = await res.json();
+  <progress id="ytProgress" class="progress" value="0" max="100"></progress>
 
-        if (data.status !== 200) {
-          status.innerText = "❌ Conversion failed";
-          return;
-        }
+  <div id="ytResult"></div>
 
-        status.innerText = "✅ Conversion Complete!";
-        downloadBtn.href = data.result.download_url;
-        downloadBtn.style.display = "block";
+  <!-- MIDDLE ADS -->
+  <div class="ad-box">AdSense Middle Ad</div>
 
-      } catch (err) {
-        status.innerText = "❌ Server Error";
-      }
-    }
-  </script>
+  <!-- VIDEO UPLOAD -->
+  <h2>Upload Video</h2>
+  <input type="file" id="uploadFile">
+
+  <select id="uploadFormat">
+    <option value="mp3">MP3</option>
+    <option value="mp4">MP4</option>
+  </select>
+
+  <button onclick="convertUpload()">Convert</button>
+
+  <progress id="uploadProgress" class="progress" value="0" max="100"></progress>
+
+  <div id="uploadResult"></div>
+
+  <!-- BOTTOM ADS -->
+  <div class="ad-box">AdSense Bottom Ad</div>
+
+</div>
+
+<script>
+async function convertYT() {
+  const url = document.getElementById("ytURL").value;
+  const format = document.getElementById("ytFormat").value;
+  const result = document.getElementById("ytResult");
+
+  result.innerHTML = "Converting...";
+
+  let res = await fetch("/api/ytmp3", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ url })
+  });
+
+  let data = await res.json();
+
+  if (data.download) {
+    result.innerHTML = `<a class="download-link" href="${data.download}" target="_blank">Download ${format.toUpperCase()}</a>`;
+  } else {
+    result.innerHTML = "Conversion failed.";
+  }
+}
+
+async function convertUpload() {
+  const file = document.getElementById("uploadFile").files[0];
+  const format = document.getElementById("uploadFormat").value;
+  const result = document.getElementById("uploadResult");
+
+  if (!file) return alert("Select a file first!");
+
+  const fd = new FormData();
+  fd.append("video", file);
+  fd.append("format", format);
+
+  result.innerHTML = "Converting...";
+
+  let res = await fetch("/upload", { method:"POST", body: fd });
+  let data = await res.json();
+
+  if (data.download) {
+    result.innerHTML = `<a class="download-link" href="${data.download}" target="_blank">Download ${format.toUpperCase()}</a>`;
+  } else {
+    result.innerHTML = "Conversion failed.";
+  }
+}
+</script>
+
 </body>
 </html>
-
