@@ -1,87 +1,39 @@
 import express from "express";
-import multer from "multer";
+import axios from "axios";
 import cors from "cors";
-import fs from "fs";
 import path from "path";
-import ytdl from "@distube/ytdl-core";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
-app.use(cors());
-app.use(express.static("public"));
 app.use(express.json());
+app.use(cors());
+app.use(express.static(__dirname));
 
-const upload = multer({ dest: "uploads/" });
-
-// Serve index.html
 app.get("/", (req, res) => {
-  res.sendFile(path.join(process.cwd(), "index.html"));
+  res.sendFile(path.join(__dirname, "index.html"));
 });
 
-// -------------------------
-// NORMAL VIDEO UPLOAD → AUDIO
-// -------------------------
-app.post("/upload", upload.single("video"), async (req, res) => {
-  try {
-    const format = req.body.format || "mp3";
-    const inputPath = req.file.path;
-    const outputPath = `output/${req.file.filename}.${format}`;
-
-    const { exec } = await import("child_process");
-    exec(`ffmpeg -i ${inputPath} ${outputPath}`, (error) => {
-      fs.unlinkSync(inputPath);
-
-      if (error) {
-        return res.status(500).json({ error: "Conversion failed" });
-      }
-
-      res.json({
-        download: `/download/${req.file.filename}.${format}`,
-      });
-    });
-  } catch {
-    res.status(500).json({ error: "Server error" });
-  }
-});
-
-// -------------------------
-// YOUTUBE URL → MP3
-// -------------------------
-app.post("/youtube", async (req, res) => {
+// ---------- YOUTUBE → MP3 API ROUTE ----------
+app.post("/api/ytmp3", async (req, res) => {
   try {
     const { url } = req.body;
-    if (!ytdl.validateURL(url)) {
-      return res.status(400).json({ error: "Invalid YouTube URL" });
-    }
 
-    const id = Date.now();
-    const output = `output/${id}.mp3`;
+    if (!url) return res.status(400).json({ error: "No URL provided" });
 
-    const stream = ytdl(url, { filter: "audioonly" });
-    const ffmpeg = await import("fluent-ffmpeg");
+    const api = await axios.get(
+      `https://api.neoxr.eu/api/ytmp3?url=${encodeURIComponent(url)}`
+    );
 
-    ffmpeg.default(stream)
-      .audioBitrate(128)
-      .save(output)
-      .on("end", () => {
-        res.json({ download: `/download/${id}.mp3` });
-      })
-      .on("error", () => {
-        res.status(500).json({ error: "Conversion failed" });
-      });
-
-  } catch (e) {
-    res.status(500).json({ error: "YouTube processing error" });
+    res.json(api.data);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "API failed. Try another link." });
   }
 });
 
-// -------------------------
-
-app.get("/download/:file", (req, res) => {
-  const filePath = path.join("output", req.params.file);
-  if (!fs.existsSync(filePath)) return res.status(404).send("File not found");
-  res.download(filePath);
-});
-
-app.listen(10000, () =>
-  console.log("🚀 Server running on PORT 10000")
-);
+// ---------- START SERVER ----------
+const PORT = process.env.PORT || 10000;
+app.listen(PORT, () => console.log(`Server running on PORT ${PORT}`));

@@ -2,76 +2,96 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Video / YouTube to MP3 Converter</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>YouTube to MP3 Converter</title>
+
   <style>
-    body { background:#0a1c3a; color:#fff; text-align:center; font-family:sans-serif; padding:30px; }
-    .box { background:#123; padding:20px; margin:auto; width:90%; max-width:500px; border-radius:12px; box-shadow:0 0 20px #00f3ff55; }
-    button { padding:14px 20px; border:none; background:#00eaff; font-size:18px; border-radius:8px; cursor:pointer; }
-    input,select{width:90%;padding:12px;margin:10px;border-radius:6px;border:none;}
-    a{color:#00ff9d;}
+    body {
+      background: #001f3f;
+      color: white;
+      font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 40px;
+    }
+    .box {
+      width: 90%;
+      max-width: 600px;
+      margin: auto;
+      padding: 30px;
+      background: #013a63;
+      border-radius: 15px;
+      box-shadow: 0 0 20px cyan;
+    }
+    input {
+      width: 95%;
+      padding: 12px;
+      border-radius: 10px;
+      border: none;
+      margin-bottom: 20px;
+      font-size: 18px;
+    }
+    button {
+      width: 95%;
+      padding: 15px;
+      background: cyan;
+      border: none;
+      border-radius: 10px;
+      font-size: 20px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #00eaff;
+    }
   </style>
 </head>
 
 <body>
-
-  <h2>Video / YouTube to MP3 Converter 🎵</h2>
-
+  <h1>YouTube to MP3 Converter 🎵</h1>
   <div class="box">
+    <input id="ytUrl" placeholder="Enter YouTube URL..." />
 
-    <h3>Upload Video</h3>
-    <input type="file" id="videoFile" />
-    <select id="format">
-      <option value="mp3">MP3</option>
-    </select>
-    <button onclick="convertUpload()">Convert Upload → Audio</button>
-    <p id="uploadLink"></p>
+    <button onclick="convert()">Convert to MP3</button>
 
-    <hr style="margin:20px">
-
-    <h3>YouTube URL</h3>
-    <input id="ytURL" placeholder="Paste YouTube link" />
-    <button onclick="convertYT()">Convert YouTube → MP3</button>
-    <p id="ytLink"></p>
+    <p id="status"></p>
+    <a id="downloadBtn" style="display:none; color:yellow; font-size:20px;" download>⬇ Download MP3</a>
   </div>
 
-<script>
-async function convertUpload(){
-  let file = document.getElementById("videoFile").files[0];
-  if(!file) return alert("Select a video!");
+  <script>
+    async function convert() {
+      const url = document.getElementById("ytUrl").value;
+      const status = document.getElementById("status");
+      const downloadBtn = document.getElementById("downloadBtn");
 
-  let fd = new FormData();
-  fd.append("video", file);
-  fd.append("format", document.getElementById("format").value);
+      if (!url) {
+        status.innerText = "❌ Please enter a YouTube URL";
+        return;
+      }
 
-  let res = await fetch("/upload", { method:"POST", body:fd });
-  let data = await res.json();
-  if(data.download){
-    document.getElementById("uploadLink").innerHTML =
-      `<a href="${data.download}">Download Audio</a>`;
-  }
-}
+      status.innerText = "⏳ Converting... Please wait...";
 
-async function convertYT(){
-  let url = document.getElementById("ytURL").value;
-  if(!url) return alert("Paste YouTube URL!");
+      try {
+        const res = await fetch("/api/ytmp3", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
 
-  let res = await fetch("/youtube", {
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({ url })
-  });
+        const data = await res.json();
 
-  let data = await res.json();
-  if(data.download){
-    document.getElementById("ytLink").innerHTML =
-      `<a href="${data.download}">Download MP3</a>`;
-  } else {
-    alert("YouTube conversion failed");
-  }
-}
-</script>
+        if (data.status !== 200) {
+          status.innerText = "❌ Conversion failed";
+          return;
+        }
 
+        status.innerText = "✅ Conversion Complete!";
+        downloadBtn.href = data.result.download_url;
+        downloadBtn.style.display = "block";
+
+      } catch (err) {
+        status.innerText = "❌ Server Error";
+      }
+    }
+  </script>
 </body>
 </html>
 
